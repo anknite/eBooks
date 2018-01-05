@@ -1,0 +1,120 @@
+@(#)README	1.4 98/04/20
+
+Copyright (c) 1998 Sun Microsystems, Inc. All Rights Reserved.
+
+This is the README file for Java(tm) Servlet Development Kit (JSDK) 2.0 
+=======================================================================
+The Java Servlet Development Kit (JSDK) can be used to develop and test
+server extensions based on the servlet API. Included is a standalone
+server (called servletrunner) that can be used to test servlets
+before running them in a servlet-enabled web server.
+
+The JSDK serves as the reference implementation for the Java Servlet API.
+This release will run on top of JDK 1.1.x. If you are interested in
+developing servlets with JDK 1.2, there is no need to use this JSDK
+as the servlet API is bundled with JDK1.2.
+
+Please note that the source code for the servlet API is released with this
+package. 
+
+Files included in the JSDK:
+
+README			this file
+bin/servletrunner.exe	ServletRunner (on Win32 systems only)
+bin/servletrunner	ServletRunner (on UNIX systems only)
+lib/jsdk.jar		javax.servlet and sun.servlet classes
+src			javax.servlet class sources
+doc			tutorial and api documentation
+examples		example servlets 
+
+
+Starting servletrunner
+----------------------
+Before starting servletrunner, first add the JSDK bin directory to
+your search path:
+
+	% setenv PATH /usr/local/jsdk/bin:$PATH		(on UNIX)
+
+	C> set PATH=C:\jsdk\bin;%PATH%			(on Win32)
+
+Then, start servletrunner by typing "servletrunner" from a command
+prompt.The following options are recognized by servletrunner (default
+values are listed to the right):
+
+    -p port	port number to listen on (8080)
+    -b backlog	backlog parameter for accepting new connections (50)
+    -m max	maximum number of connection handlers (100)
+    -t timeout	connection timeout in milliseconds (5000)
+    -d dir	servlet directory (current directory)
+    -s filename	servlet properties file (<servletdir>/servlets.properties)
+
+Invoking Servlets
+-----------------
+The standard way to invoke a servlet in any server is with a URI like the
+following:
+
+	/servlet/<servlet-name>/<path-info>?<query-args>
+
+The name of the servlet is <servlet-name> and is the class name of the
+servlet, <path-info> is optional path information for the servlet, and
+<query-args> is optional query string arguments for the servlet.
+
+For example, if you had started servletrunner on host 'eno' within
+the directory 'servlets' containing sample servlets, then from any browser
+you could run the "snoop" servlet with the following URL:
+
+	http://eno:8080/servlet/SnoopServlet/foo/bar?a=z
+
+This will invoke SnoopServlet with path info '/foo/bar' and query string
+'a=z'. The SnoopServlet will echo the request headers and query string
+arguments back to the client.
+
+Initialization Parameters
+-------------------------
+To set servlet initialization parameters you need to follow the
+following steps:
+
+1) Create a servlets.properties file.  This file will contain the name of
+   the servlet and the initialization parameters of the servlet, in this 
+   format:
+
+	servlet.<servletname>.code=<servletclass>
+	servlet.<servletname>.initArgs=<name=value>,<name=value>
+
+   For example:
+
+	servlet.snoop.code=SnoopServlet
+	servlet.snoop.initArgs=test1=1,test2=2
+
+2) Either place the properties file in the default location (which will 
+   be your servlet directory, named servlets.properties), or specify the
+   name of the servlets.properties file on startup with the -s arg.
+
+Now, if you call up SnoopServlet with the name snoop, as in
+
+	http://host:port/servlet/snoop
+
+it's output will include the two init parameters.  Calling the servlet by
+class, as in
+
+	http://host:port/servlet/SnoopServlet
+
+will report no init parameters.
+
+
+Testing your setup
+------------------
+To test your setup and ensure that it works correctly, start servletrunner
+as described above, then call up a servlet in your browser.  A good test
+servlet to try is SimpleServlet (e.g. http://host:port/servlet/SimpleServlet).
+
+Limitations
+-----------
+If a servlet class file is changed, then you will need to restart 
+servletrunner in order for the change to take effect.
+
+Problems
+--------
+For discussion of servlets, consider joining the JSERV-INTEREST mailing 
+list.  For information on subscribing to this list, check our webpage at
+http://jserv.javasoft.com/

@@ -1,0 +1,979 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<title>
+Servlet Tutorial
+</title>
+</head>
+
+<body BGCOLOR="#eeeeff">
+
+<a name="top">
+<H1><img src="./images/banner.gif" alt="JavaServer"></H1>
+</a>
+
+<CENTER>
+<H1>Servlet Tutorial</H1>
+</center>
+<HR>
+
+<p>This tutorial contains,
+<ol>
+<li><a href="#intro">An Introduction to Servlets</a>
+<ul>
+<li><a href="#uses">Example Uses</a>
+<li><a href="#arch">Architecture Overview</a>
+<li><a href="#lifecycle">Lifecycle</a>
+</ul>
+<li><a href="#write">How to Write a servlet</a>
+<ul>
+<li><a href="#user-interaction">Interacting with Clients</a>
+<li><a href="#lifecycle-methods">Lifecycle Methods</a>
+<li><a href="#servlet-info">Providing Information about the Servlet</a>
+</ul>
+<li><a href="#run">How to use <code>servletrunner</code> to Run a
+	  Servlet</a> 
+</ol>
+
+<a name="intro">
+<h2>Introduction to Servlets</h2>
+
+<p>Servlets are modules that run inside request/response-oriented
+servers, such as Java-enabled web servers, and extend them in some
+manner.  For example, a servlet might be responsible for taking data in
+an HTML order-entry form and applying the business logic used to update
+a company's order database.  Servlets are to servers what applets are
+to browsers.
+
+<p>The Servlet API, which you use to write servlets, assumes nothing
+about how a servlet is loaded, the server environment in which the
+servlet runs, or the protocol used to transmit data to and from the
+user.  This allows servlets to be embedded in many different web
+servers.
+
+<p>Servlets are an effective substitute for CGI scripts: they provide a
+way to generate dynamic documents that is both easier to write and
+faster to run.  They also address the problem of doing server-side
+programming with platform-specific APIs.  Servlets are developed with
+the Java Servlet API, a <em>standard Java extension</em>.  While it is
+not part of the core Java framework, which must always be part of all
+products bearing the Java brand, it will be made available with such
+products by their vendors as an add-on package.  It is <a href=
+"http://jserv.javasoft.com/products/java-server/servlets/environments.html">
+already supported</a> by many popular web servers.
+
+</ul>
+
+<a name="uses">
+<h3>Example Uses</h3>
+</a>
+
+<p>A few of the many applications for servlets include,
+
+<ul>
+<li>Processing data POSTed over HTTPS using an HTML form, including
+purchase order or credit card data.  A servlet like this could be part
+of an order-entry and processing system, working with product and
+inventory databases, and perhaps an on-line payment system.
+
+<li>Allowing collaboration between people.  A servlet can handle
+multiple requests concurrently; they can synchronize requests to
+support systems such as on-line conferencing.
+
+<li>Forwarding requests.  Servlets can forward requests to other
+servers and servlets.  This allows them to be used to balance load
+among several servers that mirror the same content.  It also allows
+them to be used to partition a single logical service over several
+servers, according to task type or organizational boundaries.
+
+<li>Being a community of active agents.  A servlet writer could define
+active agents that share work among each other.  Each agent would be a
+servlet, and the agents could pass data among themselves.
+
+</ul>
+
+<a name="arch">
+<h3>Servlet Architecture Overview</h3>
+</a>
+
+<p>The central abstraction in the Servlet API is the
+<code>Servlet</code> interface.  All servlets implement this interface,
+either directly or, more commonly, by extending a class that implements
+it such as <code>HttpServlet</code>.  The <code>Servlet</code>
+interface provides for methods that manage the servlet and its
+communications with clients.  Servlet writers provide some or all of
+these methods when developing a servlet.
+
+<p>When a servlet accepts a call from a client, it receives two objects:
+one is a <code>ServletRequest</code> and the other is a
+<code>ServletResponse</code>.  The <code>ServletRequest</code> class
+encapsulates the communication from the client to the server, while the
+<code>ServletResponse</code> class encapsulates the communication from
+the servlet back to the client. 
+
+<p>The <code>ServletRequest</code> interface allows the servlet access to
+information such as the names of the parameters passed in by the client,
+the protocol (scheme) being used by the client, and the names of the
+remote host that made the request and the server that received it.  It
+also provides the servlet with access to the input stream,
+<code>ServletInputStream</code>, through which the servlet gets data from
+clients that are using application protocols such as the HTTP POST and
+PUT methods.  Subclasses of <code>ServletRequest</code> allow the servlet
+to retrieve more protocol-specific data.  For example,
+<code>HttpServletRequest</code> contains methods for accessing
+HTTP-specific header information.
+
+<p>The <code>ServletResponse</code> interface gives the servlet methods
+for replying to the client.  It allows the servlet to set the content
+length and mime type of the reply, and provides an output stream,
+<code>ServletOutputStream</code>, and a Writer through which the
+servlet can send the reply data.  Subclasses of
+<code>ServletResponse</code> give the servlet more protocol-specific
+capabilities.  For example, <code>HttpServletResponse</code> contains
+methods that allow the servlet to manipulate HTTP-specific header
+information.
+
+<p>The classes and interfaces described above make up a basic Servlet.
+HTTP servlets have some additional objects that provide session-tracking
+capabilities.  The servlet writer can use these APIs to maintain state
+between the servlet and the client that persists across multiple
+connections during some time period.
+
+<a name="lifecycle">
+<h3>Servlet Lifecycle</h3>
+</a>
+
+<p>Servers load and run servlets, which then accept zero or more
+requests from clients and return data to them.  They can also remove
+servlets.  These are the steps of a servlets lifecycle.  The next
+paragraphs describe each step in more detail, concentrating on
+concurrency issues.
+
+<p>When a server loads a servlet, it runs the servlet's <a
+href="../apidoc/javax.servlet.Servlet.html#init"><code>init</code></a>
+method.  Even though most servlets are run in multi-threaded servers,
+there are no concurrency issues during servlet initialization.  This is
+because the server calls the <code>init</code> method once, when it
+loads the servlet, and will not call it again unless it is reloading
+the servlet.  The server can not reload a servlet until after it has
+removed the servlet by calling the <a
+href="../apidoc/javax.servlet.Servlet.html#destroy()">
+<code>destroy</code></a> method.  Initialization is allowed to complete
+before client requests are handled (that is, before the
+<code>service</code> method is called) or the servlet is destroyed.
+
+<p>After the server loads and initializes the servlet, the servlet is
+able to handle client requests.  It processes them in its <a
+href="../apidoc/javax.servlet.Servlet.html#service"><code>service</code></a>
+method.  Each client's request has its call to the <code>service</code>
+method run in its own servlet thread: the method receives the client's
+request, and sends the client its response.  
+
+<p>Servlets can run multiple <code>service</code> methods at a time.
+It is important, therefore, that <code>service</code> methods be
+written in a thread-safe manner.  For example, if a
+<code>service</code> method might update a field in the servlet object,
+that access should be synchronized.  If, for some reason, a server
+should not run multiple <code>service</code> methods concurrently, the
+servlet should implement the <code>SingleThreadModel</code> interface.
+This interface guarantees that no two threads will execute the
+servlet's <code>service</code> methods concurrently.
+
+<p>Servlets run until they are removed from the service, for example,
+at the request of a system administrator.  When a server removes a
+servlet, it runs the servlet's <a
+href="../apidoc/javax.servlet.Servlet.html#destroy"><code>destroy</code></a>
+method.  The method is run once; the server will not run it again until
+after it reloads and reinitializes the servlet.  When the
+<code>destroy</code> method runs, however, other threads might be
+running service requests.  If, in cleaning up, it is necessary to
+access shared resources (such as network connections to be closed),
+that access should be synchronized.
+
+<p>During a servlet's lifecycle, it is important to write thread-safe
+code for destroying the servlet and, unless the servlet implements the
+<code>SingleThreadModel</code> interface, servicing client requests.
+For more information on writing thread-safe code, please see the <a
+href="http://java.sun.com/Series/Tutorial/java/threads/multithreaded.html">
+Java Tutorial</a>.
+
+<a name="write">
+<h2>Writing the Servlet</h2>
+</a>
+
+<p>Servlets implement the <a href=
+"../apidoc/javax.servlet.Servlet.html#top">
+<code>javax.servlet.Servlet</code></a> interface.  While servlet
+writers can develop servlets by implementing the interface directly,
+this is usually not required.  Because most servlets extend web servers
+that use the HTTP protocol to interact with clients, the most common
+way to develop servlets is by specializing the <a href=
+"../apidoc/javax.servlet.http.HttpServlet.html#top">
+<code>javax.servlet.http.HttpServlet</code></a> class.  This version of
+the tutorial concentrates on describing this method of writing
+servlets.
+
+<p>The <code>HttpServlet</code> class implements the Servlet interface
+by extending the GenericServlet base class, and provides a framework
+for handling the HTTP protocol.  Its <code>service</code> method
+supports standard HTTP/1.1 requests by dispatching each request to a
+method designed to handle it.
+
+<p>By default, servlets written by specializing the
+<code>HttpServlet</code> class can have multiple threads concurrently
+running its <code>service</code> method.  If, for whatever reason, you
+would like to have only a single thread running a <code>service</code>
+method at a time, then in addition to extending the
+<code>HttpServlet</code>, your servlet should also implement the
+<code>SingleThreadModel</code> interface.  This does <emph>not</emph>
+involve writing any extra methods, merely declaring that the servlet
+implements the interface.  For example,
+
+<pre>
+public class SurveyServlet extends HttpServlet
+                           implements SingleThreadModel {
+
+    /* typical servlet code, with no threading concerns
+     * in the service method.  No extra code for the
+     * SingleThreadModel interface.  */
+    ...
+
+}
+</pre>
+
+<a name="user-interaction">
+<h3>Interacting with Clients</h3>
+</a>
+
+<p>Servlet writers who are developing HTTP servlets that specialize the
+<code>HttpServlet</code> class should override the method or methods
+designed to handle the HTTP interactions that their servlet will
+handle.  The candidate methods include,
+
+<ul>
+<li><a href="../apidoc/javax.servlet.http.HttpServlet.html#doGet">
+<code>doGet</code></a>, for handling GET, conditional GET and HEAD
+requests
+<li><a href="../apidoc/javax.servlet.http.HttpServlet.html#doPost">
+<code>doPost</code></a>, for handling POST requests
+<li><a href="../apidoc/javax.servlet.http.HttpServlet.html#doPut">
+<code>doPut</code></a>, for handling PUT requests
+<li><a href="../apidoc/javax.servlet.http.HttpServlet.html#doDelete">
+<code>doDelete</code></a>, for handling DELETE requests
+</ul>
+
+<p>By default, these methods return a <code>BAD_REQUEST (400)</code>
+error.  An example <a href="#http-doget-example">HTTP servlet that
+handles GET and HEAD requests</a> follows; it specializes the
+<code>doGet</code> method.  A <a href="#http-dopost-example">second
+example</a> is also provided.  It handles POST requests from a form by
+specializing the <code>doPost</code> method.
+
+<p>The <code>HttpServlet</code>'s <code>service</code> method, by
+default, also calls the <a
+href="../apidoc/javax.servlet.http.HttpServlet.html#doOptions">
+<code>doOptions</code></a> method when it receives an OPTIONS request,
+and <a href="../apidoc/javax.servlet.http.HttpServlet.html#doTrace">
+<code>doTrace</code></a> when it receives a TRACE request.  The default
+implementation of <code>doOptions</code> automatically determines what
+HTTP options are supported and returns that information.  The default
+implementation of <code>doTrace</code> causes a response with a message
+containing all of the headers sent in the trace request.  These methods
+are not typically overridden.
+
+<p>Whatever method you override, it will take two arguments.  The first
+encapsulates the data from the client, and is an
+<code>HttpServletRequest</code>.  The second encapsulates the response
+to the client, and is an <code>HttpServletResponse</code>.  The
+following paragraphs discuss their use.
+
+<p>An <code>HttpServletRequest</code> object provides access to HTTP
+header data, such as any cookies found in the request and the HTTP
+method with which the request was made.  It, of course, allows the you
+to obtain the arguments that the client sent as part of the request.
+How you access the client data might depend on the HTTP method of the
+request.
+
+<ul>
+<li>For any HTTP method, you can use the
+<a href="../apidoc/javax.servlet.ServletRequest#getParameterValues">
+<code>getParameterValues</code></a> method, which will return the value
+of a named parameter.  (The method <a
+href="../apidoc/javax.servlet.ServletRequest#getParameterNames">
+<code>getParameterNames</code></a> provides the names of the
+parameters.)  You can also manually parse the request.
+
+<li>For requests using the HTTP GET method, the <a
+href="../apidoc/javax.servlet.http/HttpServletRequest#getQueryString">
+<code>getQueryString</code></a> method will return a
+<code>String</code> to be parsed.
+
+<li>For HTTP methods POST, PUT, and DELETE, you have the choice
+between two methods.  If you expect text data, then it can be read
+using the <code>BufferedReader</code> returned by the <a
+href="../apidoc/javax.servlet/ServletRequest#getReader">
+<code>getReader</code></a> method; if you expect binary data, then it
+should be read with the <code>ServletInputStream</code> returned by the
+<a href="../apidoc/javax.servlet.ServletRequest#getInputStream">
+<code>getInputStream</code></a> method.
+</ul>
+
+Note that you should use <emph>either</emph> the
+<code>getParameterValues</code> method or one of the methods that allow
+you to parse the data yourself.  They can not be used together in a
+single request.
+
+<p>For responding to the client, an <code>HttpServletResponse</code>
+object provides two ways of returning the response data to the user.
+You can use the writer returned by the <a
+href="../apidoc/javax.servlet.ServletResponse#getWriter">
+<code>getWriter</code></a> method or the output stream returned by the
+<a href="../apidoc/javax.servlet.ServletResponse#getOutputStream">
+<code>getOutputStream</code></a> method.  You should use
+<code>getWriter</code> to return text data to the user, and
+<code>getOutputStream</code> for binary data.
+
+<p>Before accessing the Writer or OutputStream, HTTP header data should
+be set.  The <code>HttpServletResponse</code> class provides methods to
+access the header data, such as the content type and encoding, and
+content length of the response.  After you set the headers, you may
+obtain the writer or output stream and send the body of the response to
+the user.  Closing the writer or output stream after sending the
+response to the client allows the server to know when the response is
+complete.
+
+
+<a name="http-doget-example">
+<h4>Example of an HTTP Servlet that handles the GET and HEAD methods</h4>
+</a>
+
+<pre>
+/**
+ * This is a simple example of an HTTP Servlet.  It responds to the GET
+ * and HEAD methods of the HTTP protocol.
+ */
+public class SimpleServlet extends HttpServlet { 
+
+    <b>public void doGet(HttpServletRequest req, HttpServletResponse res)</b>
+        throws ServletException, IOException
+    {
+        // set header field first
+        <b>res.setContentType("text/html");</b>
+
+        // then get the writer and write the response data
+        <b>PrintWriter out = res.getWriter();</b>
+        out.println("&lt;HEAD&gt;&lt;TITLE&gt; SimpleServlet Output&lt;/TITLE&gt;&lt;/HEAD&gt;&lt;BODY&gt;");
+        out.println("&lt;h1&gt; SimpleServlet Output &lt;/h1&gt;");
+        out.println("&lt;P&gt;This is output is from SimpleServlet.");
+	out.println("&lt;/BODY&gt;");
+	<b>out.close();</b>
+    }
+
+    public String getServletInfo() {
+        return "A simple servlet";
+    }
+
+}
+</pre>
+
+<p>
+
+<p>The example above shows the code for the entire servlet.  The
+<code>doGet</code> method, because it is returning text to the client,
+uses the <code>HttpServletResponse</code>'s <code>getWriter</code>
+method.  It sets the sets the response header field, content type,
+before writing the body of the response, and closes the writer after
+writing the response.
+
+<p>In addition to <code>doGet</code>, there is a second method,
+<code>getServletInfo</code>.  More information on the
+<code>getServletInfo</code> method appears in <a href="#servlet-info">a
+later section</a>. Because this servlet is an example shipped with the
+release, it is already compiled.  To try the servlet, run it in the <a
+href="#run">servletrunner</a>.
+
+<a name="http-dopost-example">
+<h4>Example of an HTTP Servlet that handles the POST method</h4>
+</a>
+
+<p>The following example processes data POSTed by a form.  (This
+tutorial assumes that you know HTML.  It does not attempt to instruct
+you on how to develop the forms, only on how to process one using a
+servlet.)  The form looks like this:
+
+<pre>
+&lt;html&gt;
+  &lt;head&gt;&lt;title&gt;JdcSurvey&lt;/title&gt;&lt;/head&gt;
+  &lt;body&gt;
+    &lt;form action=http://demo:8080/servlet/survey method=POST&gt;
+      &lt;input type=hidden name=survey value=Survey01Results&gt;
+
+      &lt;BR&gt;&lt;BR&gt;How Many Employees in your Company?&lt;BR&gt;
+        &lt;BR&gt;1-100&lt;input type=radio name=employee value=1-100&gt;
+        &lt;BR&gt;100-200&lt;input type=radio name=employee value=100-200&gt;
+        &lt;BR&gt;200-300&lt;input type=radio name=employee value=200-300&gt;
+        &lt;BR&gt;300-400&lt;input type=radio name=employee value=300-400&gt;
+        &lt;BR&gt;500-more&lt;input type=radio name=employee value=500-more&gt;
+
+      &lt;BR&gt;&lt;BR&gt;General Comments?&lt;BR&gt;
+        &lt;BR&gt;&lt;input type=text name=comment&gt;
+
+      &lt;BR&gt;&lt;BR&gt;What IDEs do you use?&lt;BR&gt;
+        &lt;BR&gt;JavaWorkShop&lt;input type=checkbox name=ide value=JavaWorkShop&gt;
+        &lt;BR&gt;J++&lt;input type=checkbox name=ide value=J++&gt;
+        &lt;BR&gt;Cafe'&lt;input type=checkbox name=ide value=Cafe'&gt;
+
+      &lt;BR&gt;&lt;BR&gt;&lt;input type=submit&gt;&lt;input type=reset&gt;
+    &lt;/form&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+<p>The servlet writes the form data to a file, and responds to the user
+with a thank you message.  The <code>doPost</code> method of the
+servlet looks like this:
+
+<pre>
+    /**
+     * Write survey results to output file in response to the POSTed
+     * form.  Write a "thank you" to the client.     
+     */
+    <b>public void doPost(HttpServletRequest req, HttpServletResponse res)</b>
+	throws ServletException, IOException
+    {
+        // first, set the "content type" header of the response
+	<b>res.setContentType("text/html");</b>
+
+	//Get the response's PrintWriter to return text to the client.
+        <b>PrintWriter toClient = res.getWriter();</b>
+
+        try {
+            //Open the file for writing the survey results.
+            <b>String surveyName = req.getParameterValues("survey")[0];</b>
+            FileWriter resultsFile = new FileWriter(resultsDir
+	        + System.getProperty("file.separator")
+	        + surveyName + ".txt", true);
+            PrintWriter toFile = new PrintWriter(resultsFile);
+
+	    // Get client's form data & store it in the file
+            toFile.println("&lt;BEGIN&gt;");
+            <b>Enumeration values = req.getParameterNames();</b>
+            while(values.hasMoreElements()) {
+                String name = (String)values.nextElement();
+		<b>String value = req.getParameterValues(name)[0];</b>
+                if(name.compareTo("submit") != 0) {
+                    toFile.println(name + ": " + value);
+                }
+            }
+            toFile.println("&lt;END&gt;");
+
+	    //Close the file.
+            resultsFile.close();
+
+	    // Respond to client with a thank you
+	    toClient.println("&lt;html&gt;");
+	    toClient.println("&lt;title&gt;Thank you!&lt;/title&gt;");
+            toClient.println("Thank you for participating");
+	    toClient.println("&lt;/html&gt;");
+
+        } catch(IOException e) {
+            e.printStackTrace();
+            toClient.println(
+		"A problem occured while recording your answers.  "
+		+ "Please try again.");
+        }
+
+        // Close the writer; the response is done.
+	<b>toClient.close();</b>
+    }
+</pre>
+
+<p>The <code>doPost</code> method uses the
+<code>getParameterNames</code> and <code>getParameterValues</code>
+methods to get the form data.  Because it returns text to the client,
+<code>doPost</code> calls the <code>getWriter</code> method.  It sets
+the sets the response header field, content type, before writing the
+body of the response, and closes the writer when the response is
+complete.
+
+<a name="lifecycle-methods">
+<h3>Lifecycle Methods</h3>
+</a>
+
+<p>Servlets that manage resources do so by overriding the lifecycle
+methods <a href="#init-method"><code>init</code></a> and <a
+href="#destroy-method"><code>destroy</code></a>.  These servlets might
+need to be <a href="#init-params">given arguments at startup</a>, in
+order to initialize correctly.
+
+<a name="init-method">
+<h4>Overriding the <code>Init</code> Method</h4>
+</a>
+
+<p>During initialization, the servlet should prepare the resources it
+manages, to ready the servlet for accepting service requests.  It can
+do this without regard for multi-threading concerns, since there is
+only a single thread running on behalf of the servlet during
+initialization.  As soon as the <code>init</code> method returns, the
+servlet can receive client requests.  If, for some reason, the
+servlet's required resources can not be made available (for example, a
+required network connection can not be established), or some other
+initialization error occurs that would make it impossible for the
+servlet to handle requests, the <code>init</code> method should throw
+an <code>UnavailableException</code> exception.
+
+<p>The <code>init</code> method takes a <code>ServletConfig</code>
+object as a parameter.  The method should save this object, so that it
+can be returned by the <code>getServletConfig</code> method.  The
+simplest way to do this is to have the new <code>init</code> method
+call <code>super.init</code>.  If you do not do this, you should store
+the ServletConfig object yourself, and override the
+<code>getServletConfig</code> method so that it can obtain the object
+from its new location.
+
+<p>An example <code>init</code> method follows.  It is the
+<code>init</code> method from the Survey Servlet, which accepts input
+from a form and stores it in a file.  In order store the survey
+information, it needs a directory.  It receives the directory as an
+initialization parameter; initialization parameters are discussed in
+the <a href="#init-params">next section</a>.
+
+<a name="init-example">
+<pre>
+    public void <b>init(ServletConfig config)</b>
+	throws ServletException
+    {
+	<b>super.init(config);</b>
+
+        //Store the directory that will hold the survey-results files
+        resultsDir = getInitParameter("resultsDir");
+
+        //If no directory was provided, can't handle clients
+	if (resultsDir == null) {
+	    <b>throw new UnavailableException (this,
+		"Not given a directory to write survey results!");</b>
+	}
+    }
+</pre>
+</a>
+
+<p>As you can see, this <code>init</code> method calls the
+<code>super.init</code> method to manage the ServletConfig object.  The
+<code>init</code> method also sets a field, <code>resultsDir</code>,
+with the directory name that is provided as an initialization
+parameter.  If no directory name was provided, the servlet throws an
+unavailable exception.  If the init method completes successfully, the
+servlet can then handle client requests.
+
+<a name="init-params">
+<h4>Initialization Parameters</h4>
+</a>
+
+<p>The specification of initialization parameters is server-specific.
+For example, they are specified with a property when a servlet is run
+with the servlet runner.  This tutorial contains a general explanation
+of <a href="#properties"> properties, and how to create them</a>.
+
+<p>However the initialization parameters are specified, they are always
+obtained the same way: with the <a
+href="../apidoc/javax.servlet.GenericServlet.html#getInitParameter">
+<code>getInitParameter</code></a> method.  This method takes the
+parameter name as an argument.  The <a href="#init-example">example
+<code>init</code> method</a> calls <code>getInitParameter</code>.  If,
+for some reason, you need to get the parameter names, you can get them
+with the <a
+href="../apidoc/javax.servlet.GenericServlet.html#getParameterNames">
+<code>getParameterNames</code></a> method.
+
+<a name="destroy-method">
+<h4>Overriding the <code>Destroy</code> Method</h4>
+</a>
+
+<p>When a server unloads a servlet, it calls the servlet's
+<code>destroy</code> method.  The <code>destroy</code> method should
+undo any initialization work and synchronize persistent state with the
+current in-memory state.  This section begins with a description of how
+to write a simple <code>destroy</code> method, then describes <a
+href="#service-threads">how to structure a servlet</a> if threads
+running its <code>service</code> method might still be running when the
+<code>destroy</code> method is called.
+
+<p>Though it is often the case that a servlet that overrides the
+<code>init</code> method must also override the <code>destroy</code>
+method to undo that initialization, this is not required.  For example,
+the phone servlet, whose <code>init</code> method is used as an
+example, does not have a corresponding <code>destroy</code> method.
+Because initialization involves reading a file and using its contents
+to initialize a shared data structure, there is no work to undo when
+the server is finished with the servlet.
+
+<p>For many servlets, however, there is initialization work that must
+be undone.  For example, assume there is a servlet that opens a
+database connection during initialization.  Its <code>destroy</code>
+method, shown as an example below, would close that connection.
+
+<a name="destroy-example">
+<pre>
+    /**
+     * Cleans up database connection
+     */
+    public void destroy() {
+        try {
+            <b>con.close();</b>
+        } catch (SQLException e) {
+            while(e != null) {
+		log("SQLException: " + e.getSQLState() + '\t' +
+		    e.getMessage() + '\t' +
+		    e.getErrorCode() + '\t');
+		e = e.getNextException();
+            }
+        } catch (Exception e) {
+	    e.printStackTrace();
+	}
+    }
+</pre>
+</a>
+
+<a name="service-threads">
+<b>Coping with Service Threads at Servlet Termination</b>
+</a>
+
+<p>When a server removes a servlet, it typically calls destroy after
+all service calls have been completed, or a server-specific number of
+seconds have passed, whichever comes first.  If your servlet has
+operations that take a long time to run (that is, they may run longer
+than the server's grace period), then threads could still be running
+when destroy is called.  The servlet writer is responsible for making
+sure that any threads still handling client requests complete; the
+remainder of this section describes a technique for doing this.
+
+<p>A servlet with potentially long-running service requests should keep
+track of how many <code>service</code> methods are currently running.
+Its long-running methods should periodically poll to make sure that
+they should continue to run.  If the servlet is being destroyed, then
+the long-running method should stop working, clean up if necessary, and
+return.
+
+<p>For example, the instance variable that counts the number of
+<code>service</code> methods running could be called
+<code>serviceCounter</code>, and the indicator of whether the servlet
+is being destroyed could be an instance variable called
+<code>shuttingDown</code>.  Each variable should have its own set of
+access methods:
+
+<pre>
+public ShutdownExample extends HttpServlet {
+    private int serviceCounter = 0;
+    private Boolean shuttingDown;
+    ...
+    //Access methods for serviceCounter
+    protected synchronized void enteringServiceMethod() {
+	serviceCounter++;
+    }
+    protected synchronized void leavingServiceMethod() {
+        serviceCounter--;
+    }
+    protected synchronized int numServices() {
+	return serviceCounter;
+    }
+    //Access methods for shuttingDown
+    protected setShuttingDown(Boolean flag) {
+	shuttingDown = flag;
+    }
+    protected Boolean isShuttingDown() {
+	return shuttingDown;
+    }
+}
+</pre>
+
+<p>The <code>service</code> method should increment the service counter
+each time it is entered and decrement it each time it returns:
+
+<pre>
+    protected void service(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException
+    {
+	enteringServiceMethod();
+	try {
+            super.service(req, resp);
+        } finally {
+            leavingServiceMethod();
+        }
+    }
+</pre>
+
+<p>The <code>destroy</code> method should check the
+<code>serviceCounter</code>, and if there are any long-running methods,
+set the <code>shuttingDown</code> variable.  This variable will let the
+threads still handling client requests know that it is time to shut
+down.  The <code>destroy</code> method should then wait for the
+<code>service</code> methods to complete, in order to provide a clean
+shutdown.
+
+<pre>
+    public void destroy() {
+        /* Check to see whether there are still service methods running,
+	 * and if there are, tell them to stop. */
+	if (numServices() > 0) {
+	    setShuttingDown(true);
+        }
+
+	/* Wait for the service methods to stop.  */
+	while(numService() > 0) {
+            try {
+                thisThread.sleep(interval);
+            } catch (InterruptedException e) {
+            }
+        }
+    }
+</pre>
+
+The long-running methods should check this variable, and interrupt
+their work if neceesary:
+
+<pre>
+    public void doPost(...) {
+        ...
+	for(i = 0; ((i < lotsOfStuffToDo) && !isShuttingDown()); i++) {
+	    try {
+		partOfLongRunningOperation(i);
+	    } catch (InterruptedException e) {
+            }
+        }
+    }
+</pre>
+
+<a name="servlet-info">
+<h3>Providing Information about the Servlet</h3>
+</a>
+
+<p>Some applets and applications, for example, the Java Web Server
+Administration Tool, display information about a servlet.  This
+information can include a short description of the purpose of the
+servlet, its author, and perhaps its version number.  The Servlet API
+provides a method to return this information,
+<code>getServletInfo</code>.  By default, this method returns null.
+While servlet writers are not required to override this method, it is
+strongly recommended.  The simple servlet, shown as an example earlier,
+overrides this method:
+
+<pre>
+/**
+ * This is a simple example of an HTTP Servlet.  It responds to the GET
+ * and HEAD methods of the HTTP protocol.
+ */
+public class SimpleServlet extends HttpServlet { 
+
+   ...
+
+    <b>public String getServletInfo()</b> {
+        return "A simple servlet";
+    }
+}
+</pre>
+
+<a name="run">
+<h2>How to use <code>servletrunner</code> to Run a Servlet</h2>
+</a>
+
+<p>Once you have written your servlet, you can run it in <a href=
+"http://jserv.javasoft.com/products/java-server/servlets/environments.html">
+many web servers</a>, or in the <code>servletrunner</code>.  Where ever
+you decide to run your servlet, there are certain pieces of data that
+you might want or need to specify.  When you are using
+<code>servletrunner</code> you do this with properties.  The next
+section describes a <a href="#properties">servlet's properties</a>, and
+<a href="#property-file">how to store them</a>.  Following that, there
+is a section on how to <a href="#run-servletrunner">run servlets in
+<code>servletrunner</code></a>.
+
+<a name="properties">
+<h3>Properties</h3>
+</a>
+
+<p>Properties are key-value pairs, used for the configuration,
+creation, and initialization of a servlet.  For example,
+<code>servlet.phone.code=PhoneServlet</code> is a property whose key is
+<code>servlet.phone.code</code> and whose value is
+<code>PhoneServlet</code>.
+
+<p>There are two properties for servlets.  One is
+<code>servlet.<i>name</i>.code</code>, whose value is the servlet's
+class name.  The other property is
+<code>servlet.<i>name</i>.initargs</code>, whose value holds the
+initialization parameters for the servlet.  Both properties, <a
+href="#name-servlet"><code>servlet.<i>name</i>.code</code></a> and <a
+href="#initarg-syntax"><code>servlet.<i>name</i>.initargs</code></a>,
+are discussed in more detail below.
+
+<a name="name-servlet">
+<p><b>Using the <code>code</code> Property</b>
+</a>
+
+<p>The <code>servlet.<i>name</i>.code</code> property names your
+servlet by associating its <i>name</i> with its class.  If your servlet
+uses initialization parameters, this property is required.  It allows
+the server to associate the servlet object with its initialization
+arguments: they both have the same <i>name</i>.  Even if your servlet
+does not use initialization parameters, it is recommended that it have
+this property, so that clients can access the servlet using its
+<i>name</i>.
+
+<a name="initarg-syntax">
+<p><b>Syntax of the <code>Initargs</code> Property</b>
+</a>
+
+<p>The value of the servlet.<i>name</i>.initArgs property holds the
+servlet's initialization parameters.  The syntax of a single parameter
+is <i>parameterName</i>=<i>parameterValue</i>.  The entire property
+(the entire key-value pair) must be a single logical line.  For
+readability, you can use the backquote syntax to allow the property to
+span multiple lines in the file.  For example, the argument to the
+phone servlet looks like this:
+
+<pre>
+servlet.phone.initArgs=\
+        phonelist=servlets/phonelist
+</pre>
+
+<p>If there are multiple initialization parameters, they are specified
+as a comma-delimited list.  For example, the arguments to a database
+demo could look like this:
+
+<pre>
+servlet.dbdemo.initArgs=\
+	username=fill_in_the_user,\
+	password=fill_in_the_password,\
+	owner=fill_in_the_name
+</pre>
+
+<a name="property-file">
+<b>The Property File</b>
+</a>
+
+<p>Properties are stored in a file that is, by default, called
+"servlet.properties", though you can specify another name when
+<code>servletrunner</code> is started.  The file should hold the
+properties for all the servlets that <code>servletrunner</code> will
+run.  It should be plain text; you can create it in an editor.  Here is
+an excerpt of a <code>servlet.properties</code> file as an example:
+
+<pre>
+# phone servlet (sample.html)
+servlet.phone.code=PhoneServlet
+servlet.phone.initArgs=\
+      phonelist=servlets/phonelist
+
+# bulletin board servlet
+servlet.bboard.code=BBoardServlet
+
+# order entry servlet
+servlet.dbdemo.code=OrderEntryServlet
+servlet.dbdemo.initArgs=\
+	username=fill_in_the_user,\
+	password=fill_in_the_password,\
+	owner=fill_in_the_name
+</pre>
+
+<a name="run-servletrunner">
+<h3>Using Servlet Runner</h3>
+</a>
+
+<p>If you would like to run your servlet in a web server, please see
+that server's documentation for instructions.  This section explains
+how to run the servlet in the <code>servletrunner</code> utility that
+comes with this release.
+
+<p>The <code>servletrunner</code> is a small utility, intended for
+testing.  It is multithreaded, so it can run more than one servlet.  It
+can be used, therefore, to run multiple servlets simultaneously, or to
+test one servlet that calls other servlets in order to satisfy client
+requests.  Unlike some web servers, it does not automatically reload
+servlets when they are updated.  Because it is small, however, there is
+very little overhead associated with stopping and restarting it in
+order to use a new version of a servlet.
+
+<p>The <code>servletrunner</code> is in the
+<code>&lt;JDK&gt;/bin</code> directory.  Invoking it with the -help
+flag shows a usage message without running it:
+
+<pre>
+% ./bin/servletrunner -help
+Usage: servletrunner [options]
+Options:
+  -p port     the port number to listen on
+  -b backlog  the listen backlog
+  -m max      maximum number of connection handlers
+  -t timeout  connection timeout in milliseconds
+  -d dir      servlet directory
+  -r root     document root directory
+  -s filename servlet property file name
+  -v          verbose output
+%
+</pre>
+
+<p>In order to see the default values of these options, you can call
+<code>servletrunner</code> with the -v switch.  This will, however,
+start the servlet runner.  Just stop it after you have obtained the
+information, if you are not ready to run it yet, or want it to run with
+something other than the default values.
+
+<pre>
+% ./bin/servletrunner -v
+Server settings:
+  port = 8080
+  backlog = 50
+  max handlers = 100
+  timeout = 5000
+  servlet dir = .
+  document dir = .
+  servlet propfile = .:servlet.properties
+ 
+ 
+</pre>
+
+<p>Once the servletrunner is executing, you run servlets by calling
+them directly in your browser, or as the <a
+href="#http-dopost-example">forms example</a> shows, by using a form
+that calls a servlet to process its data.  The URL for a servlet has
+the following general form:
+
+<pre>
+http://<i>machine-name</i>:<i>port</i>/servlet/<i>servlet-name</i>
+</pre>
+
+where <i>servlet-name</i> corresponds to the <a
+href="#name-servlet">name you have given your servlet</a>.
+
+For example, to run the Phone Servlet, which has the property
+<code>servlet.phone.code=PhoneServlet</code>, you would use the
+following URL.  (It assumes that servletrunner is running on your
+machine, <code>localhost</code>, at port 8080, and that the phone
+servlet is located in the servlet directory provided to
+<code>servletrunner</code> at startup:
+
+<pre>
+http://localhost:8080/servlet/phone
+</pre>
+
+Another example, the survey servlet, is run as a result of submitting a
+form.  The URL used for the servlet by the survey-form in the HTML file
+is:
+
+<pre>
+http://demo:8080/servlet/survey
+</pre>
+
+Here is the output of the survey servlet:
+<br>
+<p>
+<img src="./images/survey-reply.gif" alt="output of the survey servlet">
+
+<hr>
+<a href="#top"><img align="bottom" SRC="../images/duke.gif">Top</A>
+
+<address><a href="mailto:java-server-feedback@java.sun.com">
+java-server-feedback@java.sun.com</a></address>
+
+</body>
+</html>
